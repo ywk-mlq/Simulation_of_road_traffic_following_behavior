@@ -10,6 +10,9 @@
 
 1. 线性模型：
    1. `GHR`模型（反应--刺激模型）
+
+      ![](https://pics.images.ac.cn/image/5eca6a5850e42.html)
+
 2. 非线性模型
    1. `Gipps`模型（安全距离模型）
    2. `Wiedemann`模型（心理--生理模型）
