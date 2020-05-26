@@ -16,8 +16,8 @@ Description:本程序的界面管理
 #include <stdlib.h>
 #include <vector>
 #include <string>
-#include "Data_management.h"
 #include "GHR_model.h"
+#include "Data_management.h"
 #include "File_management.h"
 using namespace std;
 
@@ -25,45 +25,34 @@ using namespace std;
 class Intrt
 {
 public:
-	Intrt();  // 构造函数的定义
-	~Intrt(); // 析构函数的定义
-	void startInter();  //程序开始的界面选择
+	Intrt();                     // 构造函数的定义
+	~Intrt();                    // 析构函数的定义
 
 private:
-	
+	void startInter();           // 程序开始的界面选择
+	void GHR_model_interface();  // GHR模型界面
 
 };
 
 // 全局变量
-vector<Vehicle_information*>   Vehicle;  //车辆信息的向量
+vector<Vehicle_information*>   Vehicle;   //车辆信息的向量
 vector<Personnel_information*> Personnel; //人员信息的向量
 
 /**
+* 构造函数
 * 函数功能：在程序开始前加载数据
 */
 Intrt::Intrt()
 {
+	/*导入数据*/
 	Input_vehicle_information(Vehicle);     // 录入车辆信息
 	Input_personnel_information(Personnel); // 录入人员信息
-	// 检查信息是否完整
-	for (unsigned int i = 0; i < Vehicle.size(); ++i)
-	{
-		cout << "key:\t" << Vehicle[i]->key << endl;
-		cout << "speed:\t" << Vehicle[i]->speed << endl;
-		cout << "acceleration:\t" << Vehicle[i]->acceleration << endl;
-		cout << "conductor:\t" << Vehicle[i]->conductor << endl;
-		cout << "distance:\t" << Vehicle[i]->distance << endl;
-	}
-	for (unsigned int j = 0; j < Personnel.size(); ++j)
-	{
-		cout << "age:\t" << Personnel[j]->age << endl;
-		cout << "auto_age:\t" << Personnel[j]->auto_age << endl;
-		cout << " response_time:\t" << Personnel[j]->response_time << endl;
-		cout << "reaction_coefficient:\t" << Personnel[j]->reaction_coefficient << endl;
-	}
+	/*开始程序*/
+	startInter();
 }
 
 /**
+* 析构函数
 * 函数功能：在程序结束后释放向量指针内存并删除数据
 */
 Intrt::~Intrt()
@@ -106,12 +95,27 @@ void Intrt::startInter()
 	cin >> options;
 	switch (options)
 	{
-	case '1':
-		// GHR模型的实现
+	case '1':        // GHR模型的实现
+		GHR_model_interface();
 		break;
 	default:
 		exit(-1);
 		break;
 	}
-	
+}
+
+/**
+*  函数功能：GHR模型界面的设计与运算
+*/
+void Intrt::GHR_model_interface()
+{
+	system("cls");
+	puts("\t\t\t\t\t >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+	puts("\t\t\t\t\t >>>刺激-反应模型(GHR)仿真界面<<< ");
+	puts("\t\t\t\t\t <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
+	GHR ghr(Vehicle);
+	// 先显示数据
+
+	// GHR算法
+	ghr.GHR_model_algorithm(30);
 }
