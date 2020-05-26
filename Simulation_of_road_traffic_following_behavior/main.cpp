@@ -19,6 +19,5 @@ int main()
 {
 	// 开始程序
 	Intrt start;
-	//start.startInter();
 	return 0;
 }
