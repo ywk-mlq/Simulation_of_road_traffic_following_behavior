@@ -12,6 +12,8 @@
    1. `GHR`模型（反应--刺激模型）
 
       ![](https://pics.images.ac.cn/image/5eca6a5850e42.html)
+      
+       `GHR`模型的算法，先计算，再展示
 
 2. 非线性模型
    1. `Gipps`模型（安全距离模型）
