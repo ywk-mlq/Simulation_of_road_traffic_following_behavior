@@ -1,0 +1,10 @@
+First parameter(Aron):
+		                c	      m	       l
+Deceleration phase:	2.45	  0.655    0.676
+Stable phase:	      2.67	  0.26	   0.5
+Scelerated phase:	  2.46	  0.14	   0.18
+
+Second parameter(Ozaki):
+		                c	      m	       l
+Deceleration phase:	1.1	    0.9	     1.0
+Scelerated phase:	  1.1	    -0.2	   0.2
