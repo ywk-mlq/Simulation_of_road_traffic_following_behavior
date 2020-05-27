@@ -12,6 +12,7 @@ Description:本程序的界面管理
 
 #pragma once
 #include <iostream>
+#include <iomanip>
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
@@ -80,6 +81,7 @@ Intrt::~Intrt()
 */
 void Intrt::startInter()
 {
+	system("cls");
 	puts("\t\t\t\t\t >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 	puts("\t\t\t\t\t >>>>道路交通跟驰行为仿真系统<<<< ");
 	puts("\t\t\t\t\t <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
@@ -99,7 +101,7 @@ void Intrt::startInter()
 		GHR_model_interface();
 		break;
 	default:
-		exit(-1);
+		startInter();
 		break;
 	}
 }
@@ -115,7 +117,21 @@ void Intrt::GHR_model_interface()
 	puts("\t\t\t\t\t <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
 	GHR ghr(Vehicle);
 	// 先显示数据
-
+	puts("\t\t    +----------------------------------------------------------------------+");
+	puts("\t\t    |                         Vehicle  Information                         |");
+	puts("\t\t    +---------+-----------+------------------+---------------+-------------+");
+	cout << "\t\t    |" << setw(6) << "key" << setw(4) << "|" << setw(8) << "speed" << setw(4)
+		 << "|" << setw(15) << "acceleration" << setw(4) << "|" << setw(12) << "conductor" << setw(4)
+		 << "|" << setw(11) << "distance" << setw(4) << "|\n";
+	puts("\t\t    +---------+-----------+------------------+---------------+-------------+");
+	cout << setiosflags(ios::left | ios::showpoint);  // 设左对齐，以一般实数方式显示
+	for (unsigned int i = 0; i < Vehicle.size(); ++i)
+	{
+		cout << "\t\t    |  " << setw(7) << Vehicle[i]->key << "|   " << setw(8) << fixed <<
+			setprecision(2) << Vehicle[i]->speed << "|       " << setw(11) << Vehicle[i]->acceleration <<
+			"|      " << setw(9) << Vehicle[i]->conductor << "|    " << setw(9) << Vehicle[i]->distance << "|\n";
+	}
+	puts("\t\t    +---------+-----------+------------------+---------------+-------------+");
 	// GHR算法
-	ghr.GHR_model_algorithm(30);
+	//ghr.GHR_model_algorithm(0, (float)3.6);
 }
