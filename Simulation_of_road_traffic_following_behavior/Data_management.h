@@ -36,7 +36,7 @@ struct GHR_model_parameters
 {
 	float Dec_Pha[3];          //减速时三个参数【C,M,L】
 	float Sta_Pha[3];          //稳定时三个参数【C,M,L】
-	float Sce_Pha[3];          //减速时三个参数【C,M,L】
+	float Sce_Pha[3];          //加速时三个参数【C,M,L】
 };
 
 /* GHR模型计算结果 结构体 */
