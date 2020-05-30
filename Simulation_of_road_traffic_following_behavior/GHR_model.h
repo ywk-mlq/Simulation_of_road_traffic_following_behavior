@@ -11,6 +11,7 @@ Description:本程序的GHR模型系统
 **************************************************/
 #pragma once
 //#include "File_management.h"
+#include <map>
 #include <cmath>
 #include <iostream>
 #include "Data_management.h"
@@ -24,18 +25,19 @@ const int C          = 0;   // 车辆敏感系数
 const int M          = 1;   // 速度敏感参数
 const int L          = 2;   // 相对距离敏感参数
 const int Parameters = 2;   // 参数的个数
-const float Folttime = 3;   // 三秒定律
-const int TIMES      = 540; // 跟驰多少秒
 
 
 // GHR 类的定义
 class GHR
 {
 public:
-	GHR(vector<Vehicle_information*> Vehicle);                 // 构造函数的定义
-	~GHR();                                                    // 析构函数的定义
-	void GHR_model_algorithm(float The_head_car_changes_speed, float acceleration);
-private:                                                       // GHR模型算法(核心算法)
+	GHR(vector<Vehicle_information*> Vehicle);							  // 构造函数的定义
+	~GHR();																  // 析构函数的定义
+	GHR_model_calculation_results* GHR_model_algorithm(float, float, int);// GHR模型算法(核心算法)
+	GHR_model_calculation_results* obtain_vehicle_map(int);				  // 获得每个时间的图，返回图
+private:                                                       
+	float Folttime = 3;                                        // 三秒定律
+	int   TIMES    = 540;                                      // 跟驰多少秒
 	void Gets_the_initial_state_data();                        // 获取初始状态数据
 	float accelerate_algori();                                 // GHR加速加速度算法
 	float deceleration_algori();                               // GHR减速加速度算法
@@ -46,6 +48,7 @@ private:                                                       // GHR模型算�
 	GHR_model_calculation_results* rear         = NULL;        // 后车的指针
 	GHR_model_calculation_results* front_nxtime = NULL;        // 前车下一秒的指针
 	GHR_model_calculation_results* rear_nxtime  = NULL;        // 后车下一秒的指针
+	map<int, GHR_model_calculation_results*> Vehicle_time;     // 每个时间的图，存放指针
 };
 
 /**
@@ -66,6 +69,7 @@ GHR::GHR(vector<Vehicle_information*> Vehicle)
 */
 GHR::~GHR()
 {
+	/* 删除二叉链表 */
 	if (top != NULL)
 	{
 		front = top->next_car;
@@ -82,6 +86,9 @@ GHR::~GHR()
 			}
 		}
 	}
+	/* 删除散列表 图 */
+	if (!Vehicle_time.empty())
+		Vehicle_time.clear();
 	
 }
 
@@ -89,12 +96,14 @@ GHR::~GHR()
 * GHR 核心算法
 * 函数功能：GHR模型的算法 (三秒定律)
 */
-void GHR::GHR_model_algorithm(float The_head_car_changes_speed, float acceleration)
+GHR_model_calculation_results* GHR::GHR_model_algorithm
+(float The_head_car_changes_speed, float acceleration, int timess)
 {
 	/**
 	* 只要大于三秒定律就加速
 	* 只要小于三秒定律就减速
 	*/
+	TIMES = timess;
 	// 获取初始状态数据
 	Gets_the_initial_state_data();
 	// 加速度输入
@@ -115,8 +124,10 @@ void GHR::GHR_model_algorithm(float The_head_car_changes_speed, float accelerati
 			// 后车需要变化的加速度,前车变化的车速，后车变化的车速，距离的变化
 			float rear_acc = 0, front_sp = 0, rear_sp = 0, rear_dis = 0;
 			// 1.当两辆车相撞时
+
 			if (rear->distance <= 0)
 			{
+				//rear->distance = 0.1;
 				the_crash = true;
 				break;
 			}
@@ -129,6 +140,7 @@ void GHR::GHR_model_algorithm(float The_head_car_changes_speed, float accelerati
 				front_sp = front->speed + front->acceleration;
 				// 2.1.3后车的变化后的速度
 				rear_sp = rear->speed + rear->acceleration > 32 ? 32 : rear->speed + rear->acceleration;
+				rear_sp = rear->speed + rear->acceleration < 0  ? 1  : rear->speed + rear->acceleration;
 				// 2.1.4后车与前车的间距
 				rear_dis = rear->distance + ((front->speed + front_sp) / 2) - ((rear->speed + rear_sp) / 2);
 			}
@@ -153,7 +165,10 @@ void GHR::GHR_model_algorithm(float The_head_car_changes_speed, float accelerati
 				else
 					front_nxtime->acceleration = front_sp <= The_head_car_changes_speed ? 0 : acceleration;
 				front_nxtime->change_acceleration = front_nxtime->acceleration - front->acceleration;
-				// 3.1.2接入结点
+				// 3.1.2输入到图中
+				Vehicle_time.insert(map<int, GHR_model_calculation_results*> ::value_type
+				(front_nxtime->time, front_nxtime));
+				// 3.1.3接入结点
 				front->next_time = front_nxtime;
 			}
 			// 3.2接入后车数据
@@ -180,11 +195,13 @@ void GHR::GHR_model_algorithm(float The_head_car_changes_speed, float accelerati
 		// 如果撞车了，就停止运算
 		if (the_crash)
 		{
+			cout << "在第" << times << "秒";
 			cout << "第" << front->key << "辆车与第" << rear->key
 				 << "车相撞了！！！" << endl;
 			break;
 		}
 	}
+	return top;
 }
 
 /**
@@ -211,6 +228,8 @@ void GHR::Gets_the_initial_state_data()
 		q->next_time = NULL;   q->next_car = NULL;
 		p->next_car = q;       p = q;
 	}
+	Vehicle_time.insert(map<int, GHR_model_calculation_results*> ::value_type
+	(top->next_car->time, top->next_car));
 }
 
 /**
@@ -226,7 +245,9 @@ float GHR::accelerate_algori()
 	Aron_a  = Aron_a  < 0 ? (0 - Aron_a)  : Aron_a;
 	Ozaki_a = Ozaki_a < 0 ? (0 - Ozaki_a) : Ozaki_a;
 	float A = (Aron_a + Ozaki_a) / 2;
-	return A > (float)6.2 ? (float)6.2 : A;
+	//return A > (float)1.6 ? (float)1.6 : A;
+	/*if (rear->key == 6) cout << Ozaki_a << endl;*/
+	return Ozaki_a;
 }
 
 /**
@@ -242,5 +263,17 @@ float GHR::deceleration_algori()
 	Aron_a  = Aron_a  > 0 ? (0 - Aron_a)  : Aron_a;
 	Ozaki_a = Ozaki_a > 0 ? (0 - Ozaki_a) : Ozaki_a;
 	float A = (Aron_a + Ozaki_a) / 2;
-	return A < (float)-6.2 ? (float)-6.2 : A;
+	//return A < (float)-10 ? (float)-10 : A;
+	/*if (rear->key == 6) cout << Ozaki_a << endl;*/
+	return Ozaki_a;
+}
+
+/*
+* 函数功能：获得每个时间的图，返回图
+*/
+GHR_model_calculation_results* GHR::obtain_vehicle_map(int Temptimes)
+{
+	// 查找图的中指针
+	rear_nxtime = Vehicle_time[Temptimes];
+	return rear_nxtime;
 }
