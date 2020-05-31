@@ -17,6 +17,9 @@
 
 2. 非线性模型
    1. `Gipps`模型（安全距离模型）
+      
+      ![](https://pics.images.ac.cn/image/5ed3a746e0f94.html)
+        
    2. `Wiedemann`模型（心理--生理模型）
    3. `ANN`模型（人工神经网络模型）
    4. `SVR`模型（支持向量回归模型）
