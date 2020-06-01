@@ -39,8 +39,8 @@ struct GHR_model_parameters
 	float Sce_Pha[3];          //加速时三个参数【C,M,L】
 };
 
-/* GHR模型计算结果 结构体 */
-struct GHR_model_calculation_results
+/* GHR和GF模型计算结果 结构体 */
+struct Type_model_calculation_results
 {
 	int   key;	              // 车标
 	int   time;               // 进行的时间（s）
@@ -50,6 +50,8 @@ struct GHR_model_calculation_results
 	float change_acceleration;// 距上一秒变化的加速度
 	float distance;           // 距离前车的距离（m），头车为-1m
 	float change_distance;    // 距上一秒变化的车头距离
-	GHR_model_calculation_results* next_car; // 指向下一辆车的数据
-	GHR_model_calculation_results* next_time;// 指向下一秒的数据
+	Type_model_calculation_results* next_car; // 指向下一辆车的数据
+	Type_model_calculation_results* next_time;// 指向下一秒的数据
 };
+
+
