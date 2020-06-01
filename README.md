@@ -21,7 +21,7 @@
       ![](https://pics.images.ac.cn/image/5ed3a746e0f94.html)
         
    2. `Wiedemann`模型（心理--生理模型)
-   3. `OV`模型（理想速度模型）
+   3. `GF`模型（理想速度模型）
 
 ### 二、需要参考的数据（影响跟驰模型的因素）
 
