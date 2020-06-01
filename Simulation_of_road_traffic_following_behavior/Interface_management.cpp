@@ -32,6 +32,7 @@ public:
 private:
 	void startInter();           // 程序开始的界面选择
 	void GHR_model_interface();  // GHR模型界面
+	void GF_model_interface();   // GF 模型界面
 
 };
 
@@ -82,11 +83,13 @@ Intrt::~Intrt()
 void Intrt::startInter()
 {
 	system("cls");
-	puts("\n\n\n\n\n\t\t\t\t\t\t\t\t\t +------------------------------+");
-	puts("\t\t\t\t\t\t\t\t\t +   道路交通跟驰行为仿真系统   + ");
+	puts("\n\n\n\n\n\n\n\n\t\t\t\t\t\t\t\t\t +------------------------------+");
+	puts("\t\t\t\t\t\t\t\t\t |   道路交通跟驰行为仿真系统   | ");
 	puts("\t\t\t\t\t\t\t\t\t +------------------------------+\n");
 	puts("\t\t\t\t\t\t\t\t  +-------------------------------------------+");
-	puts("\t\t\t\t\t\t\t\t  +\t  *1.GHR模型（反应--刺激模型）        +");
+	puts("\t\t\t\t\t\t\t\t  |\t  *1.GHR模型（反应--刺激模型）        |");
+	puts("\t\t\t\t\t\t\t\t  +-------------------------------------------+");
+	puts("\t\t\t\t\t\t\t\t  |\t  *2.GF 模型（总合成力理想速度模型）  |");
 
 	/*puts("\t\t\t\t  *\t\t  *2.学生端登录               *");
 	puts("\t\t\t\t  *\t\t  *3.管理员登录               *");
@@ -102,6 +105,9 @@ void Intrt::startInter()
 		system("pause");
 		startInter();
 		break;
+	case '2':        // GF模型的实现
+		GF_model_interface();
+		break;
 	default:
 		exit(0);
 		break;
@@ -115,7 +121,7 @@ void Intrt::GHR_model_interface()
 {
 	system("cls");
 	puts("\n\t\t\t\t\t\t\t\t\t +--------------------------------+");
-	puts("\t\t\t\t\t\t\t\t\t +   刺激-反应模型(GHR)仿真界面   +");
+	puts("\t\t\t\t\t\t\t\t\t |   刺激-反应模型(GHR)仿真界面   |");
 	puts("\t\t\t\t\t\t\t\t\t +--------------------------------+\n");
 	// 1.显示车辆数据
 	puts("\t\t\t\t\t\t     +----------------------------------------------------------------------+");
@@ -191,7 +197,7 @@ void Intrt::GHR_model_interface()
 	puts("\n\t\t\t\t\t\t~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 	// 4.执行GHR算法
 	GHR ghr(Vehicle);
-	GHR_model_calculation_results* top = ghr.GHR_model_algorithm(changespeed, accacc, times);
+	Type_model_calculation_results* top = ghr.GHR_model_algorithm(changespeed, accacc, times);
 	// 5.GHR算法的展示 选择展示的方式
 	puts("\t\t\t\t\t\t\t\t        +---------------------------------+");
 	puts("\t\t\t\t\t\t\t\t        |        Display Data Mode        |");
@@ -204,7 +210,7 @@ void Intrt::GHR_model_interface()
 	begin:
 	cout << "\t\t\t\t\t\t\t\t* Please enter the data format you want to display：";
 	cin >> display;
-	GHR_model_calculation_results* head = NULL;
+	Type_model_calculation_results* head = NULL;
 	switch (display)
 	{
 	case 1:
@@ -322,7 +328,7 @@ void Intrt::GHR_model_interface()
 		for (int i = 0; i < 10; ++i) cout << "-----|-----|-----+";
 		// 数据显示
 		cout << fixed << setprecision(1);
-		GHR_model_calculation_results* temp = head;
+		Type_model_calculation_results* temp = head;
 		while (1 + endTime - (startTime++) && temp != NULL)
 		{
 			head = temp;
@@ -344,6 +350,20 @@ void Intrt::GHR_model_interface()
 		goto begin;
 		break;
 	}
-	
-	
+}
+
+/**
+* 函数功能：GF模型的界面设计与运算
+*/
+void Intrt::GF_model_interface()
+{
+	// 1.显示标题界面
+	system("cls");
+	puts("\n\t\t\t\t\t\t\t\t\t +--------------------------------+");
+	puts("\t\t\t\t\t\t\t\t\t |总合成力理想速度模型(GF)仿真界面|");
+	puts("\t\t\t\t\t\t\t\t\t +--------------------------------+\n");
+
+	// GF模型的算法
+	GHR GF(Vehicle, "GF");
+
 }
