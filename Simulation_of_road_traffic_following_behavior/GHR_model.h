@@ -19,13 +19,13 @@ Description:本程序的GHR和GF模型系统
 using namespace std;
 
 // 全局变量
-const int Aron       = 0;   // Aron参数
-const int Ozaki      = 1;   // Ozaki参数
-const int C          = 0;   // 车辆敏感系数
-const int M          = 1;   // 速度敏感参数
-const int L          = 2;   // 相对距离敏感参数
-const int Parameters = 2;   // 参数的个数
-
+const int Aron                              = 0;     // Aron参数
+const int Ozaki                             = 1;     // Ozaki参数
+const int C                                 = 0;     // 车辆敏感系数
+const int M                                 = 1;     // 速度敏感参数
+const int L                                 = 2;     // 相对距离敏感参数
+const int Parameters                        = 2;     // 参数的个数
+const float Average_sensitivity_coefficient = 0.0786f;// 算术平均的敏感参数
 
 // GHR 类的定义
 class GHR
@@ -35,9 +35,11 @@ public:
 	~GHR();																   // 析构函数的定义
 	Type_model_calculation_results* GHR_model_algorithm(float, float, int);// GHR模型算法(核心算法)
 	Type_model_calculation_results* obtain_vehicle_map(int);			   // 获得每个时间的图，返回图
+
 private:
 	float Folttime = 3;                                        // 三秒定律
 	int   TIMES    = 540;                                      // 跟驰多少秒
+	const float Maximum_speed = 32;                            // 额定得最大车速
 	void Gets_the_initial_state_data();                        // 获取初始状态数据
 	float accelerate_algori();                                 // GHR加速加速度算法
 	float deceleration_algori();                               // GHR减速加速度算法
@@ -142,11 +144,11 @@ Type_model_calculation_results* GHR::GHR_model_algorithm
 				if (Model == "GHR")
 					rear_acc = rear->distance > rear->speed * Folttime ? accelerate_algori() : deceleration_algori();
 				else
-					rear_acc = 0;
+					rear_acc = GF_Acceleration_algorithm();
 				// 2.1.2前车的变化后的速度
 				front_sp = front->speed + front->acceleration;
 				// 2.1.3后车的变化后的速度
-				rear_sp = rear->speed + rear->acceleration > 32 ? 32 : rear->speed + rear->acceleration;
+				rear_sp = rear->speed + rear->acceleration > Maximum_speed ? Maximum_speed : rear->speed + rear->acceleration;
 				rear_sp = rear->speed + rear->acceleration < 0  ? 1  : rear->speed + rear->acceleration;
 				// 2.1.4后车与前车的间距
 				rear_dis = rear->distance + ((front->speed + front_sp) / 2) - ((rear->speed + rear_sp) / 2);
@@ -194,10 +196,10 @@ Type_model_calculation_results* GHR::GHR_model_algorithm
 			// 3.2.2接入结点
 			rear->next_time                  = rear_nxtime;
 			// 3.3前车的下一结点连接后车
-			front->next_time->next_car = rear_nxtime;
+			front->next_time->next_car       = rear_nxtime;
 
 			// 4.下两辆车的比较
-			front = rear; rear = rear->next_car;
+			front = rear; rear               = rear->next_car;
 		}
 		// 如果撞车了，就停止运算
 		if (the_crash)
@@ -231,7 +233,7 @@ void GHR::Gets_the_initial_state_data()
 		q->key                 = vehicle[i]->key;
 		q->speed               = vehicle[i]->speed;
 		q->distance            = vehicle[i]->distance;
-		q->acceleration = q->key == 1 ? vehicle[i]->acceleration : 0;
+		q->acceleration        = q->key == 1 ? vehicle[i]->acceleration : 0;
 		q->next_time = NULL;   q->next_car = NULL;
 		p->next_car = q;       p = q;
 	}
@@ -290,5 +292,14 @@ Type_model_calculation_results* GHR::obtain_vehicle_map(int Temptimes)
 */
 float GHR::GF_Acceleration_algorithm()
 {
-
+	// 当前后车是rear指针指向，前车是front指针指向
+	float OV;  // 定义两个浮点的加速度
+	// 1.先计算OV模型定义得参数
+	// 1.1先计算f(x)的函数 反应时间为1s
+	float Ds    = rear->speed * Folttime;                                      // 速度为0时的安全距离
+	float f_x_t = (Maximum_speed / 2) * (tanh(rear->distance - Ds) + tanh(Ds));// 计算f(x)函数的算法
+	OV          = Average_sensitivity_coefficient * (rear->speed - f_x_t);     // 计算OV模型加速度的算法
+	// 2.在计算GF模型定义的参数
+	OV = OV > 0 ? OV : (0 - OV);
+	return rear->distance > rear->speed * Folttime ? OV : (0 - OV);
 }
