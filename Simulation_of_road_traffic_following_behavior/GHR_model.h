@@ -1,8 +1,8 @@
 /*************************************************
 
-Copyright:于文凯 马丽千
+Copyright:于文凯 马丽千 王泳清
 
-Author:于文凯 马丽千
+Author:于文凯 马丽千 王泳清
 
 Date:2020-05-24
 
@@ -14,6 +14,7 @@ Description:本程序的GHR和GF模型系统
 #include <cmath>
 #include <string>
 #include <iostream>
+#include <windows.h>
 #include "Data_management.h"
 #include "File_management.h"
 using namespace std;
@@ -26,6 +27,13 @@ const int M                                 = 1;     // 速度敏感参数
 const int L                                 = 2;     // 相对距离敏感参数
 const int Parameters                        = 2;     // 参数的个数
 const float Average_sensitivity_coefficient = 0.0786f;// 算术平均的敏感参数
+const float m1 = -0.009f;                              //安全距离模型中的定量参数
+const float m2 = 0.067f;                               //安全距离模型中的定量参数
+const float n1 = 2.36f;                                //安全距离模型中的定量参数
+const float n2 = 1.98f;                                //安全距离模型中的定量参数
+const float response_time = 0.4f;                      //反应时间   T
+const float addresponse_time = 0.2f;                   //附加反应时间  seita
+const float maxdeceleration = -8.5f;                   //最大减速度
 
 // GHR 类的定义
 class GHR
@@ -34,6 +42,7 @@ public:
 	GHR(vector<Vehicle_information*> Vehicle, string);				       // 构造函数的定义
 	~GHR();																   // 析构函数的定义
 	Type_model_calculation_results* GHR_model_algorithm(float, float, int);// GHR模型算法(核心算法)
+	Type_model_calculation_results* Gip_model_algorithm(float, float, int);// Gipps模型算法(核心算法)
 	Type_model_calculation_results* obtain_vehicle_map(int);			   // 获得每个时间的图，返回图
 
 private:
@@ -46,6 +55,7 @@ private:
 	float GF_Acceleration_algorithm();                         // GF模型加速度算法                    
 	vector<Vehicle_information*> vehicle;                      // 车辆信息的向量
 	GHR_model_parameters GHR_Para[Parameters];                 // GHR模型参数的数据
+	GHR_model_parameters Gipps_Para[Parameters];               // Gipps模型参数的数据
 	string Model                                 = "GHR";      // 需要构建的模型种类
 	Type_model_calculation_results* top          = NULL;       // 运算结果的头指针
 	Type_model_calculation_results* front        = NULL;       // 前车的指针
@@ -55,6 +65,15 @@ private:
 	map<int, Type_model_calculation_results*> Vehicle_time;    // 每个时间的图，存放指针
 
 };
+
+/*  Heaviside函数
+	计算模型中的一个参数   */
+float Heaviside(float v) {
+	if (v > 0) return 1;
+	if (v < 0) return 0;
+	else return 0.5;
+}
+
 
 /**
 * 构造函数
@@ -302,4 +321,125 @@ float GHR::GF_Acceleration_algorithm()
 	// 2.在计算GF模型定义的参数
 	OV = OV > 0 ? OV : (0 - OV);
 	return rear->distance > rear->speed * Folttime ? OV : (0 - OV);
+}
+
+/**
+* 函数功能：安全距离模型的算法
+*/
+Type_model_calculation_results* GHR::Gip_model_algorithm
+(float The_head_car_changes_speed, float acceleration, int timess)
+{
+	/**
+	* 只要大于三秒定律就加速
+	* 只要小于三秒定律就减速
+	*/
+	TIMES = timess;
+	// 获取初始状态数据
+	Gets_the_initial_state_data();
+	// 加速度输入
+	top->next_car->acceleration = acceleration;
+	// 判断算法循环(循环timess秒)
+	int times = 0; bool the_crash = false;
+	while (++times <= TIMES)
+	{
+		// 车辆指针的第一次准备
+		front = top->next_car;
+		// 车辆指针的第二次准备
+		for (int i = 1; i < times; ++i)
+			front = front->next_time;
+		rear = front->next_car;
+		// 两辆车两辆车的判断
+		while (rear != NULL)
+		{
+			// 后车需要变化的加速度,前车变化的车速，后车变化的车速，距离的变化,后车车长
+			float rear_acc = 0, front_sp = 0, rear_sp = 0, rear_dis = 0, rear_co = 17;
+			// 1.当两辆车相撞时
+			if (rear->distance <= 0)
+			{
+				the_crash = true;
+				break;
+			}
+
+			// 2.没有相撞时的比较
+			else
+			{
+
+				rear_acc = rear->distance > rear->speed * Folttime ? accelerate_algori() : deceleration_algori();
+				float t = 1 - response_time - addresponse_time;//减速/加速的时间
+				// 2.1.2前车的变化后的速度
+				front_sp = front->speed + front->acceleration;
+
+				rear_dis = rear->distance + (front->speed * t - front->acceleration * 0.5 * pow(t, 2)) - (rear->speed * t - rear_acc * 0.5 * pow(t, 2));
+				// 2.1.4后车与前车的间距
+				float safe_distance;
+				safe_distance = rear_dis - rear_co;
+				//依靠安全距离模型得出的式子
+				float  middle_result;
+				middle_result = pow(maxdeceleration, 2) * pow((response_time / 2 + addresponse_time), 2) + 2 * maxdeceleration * safe_distance / (Heaviside(acceleration * (response_time + addresponse_time)) * (m1 * acceleration * (response_time + addresponse_time) + n1) + Heaviside(-acceleration * (response_time + addresponse_time)) * (m2 * rear_sp + n2));
+				//  只是一个中间结果，因为模型公式太长了分开写的
+
+				rear_sp = -maxdeceleration * (response_time / 2 + addresponse_time) + pow(middle_result, 0.5);
+				// 2.1.3后车的变化后的速度
+				//优化的Gipps模型下的拥挤状态（不考虑自由行驶状态）
+				rear_sp = rear->speed + rear->acceleration > 32 ? 32 : rear->speed + rear->acceleration;
+				rear_sp = rear->speed + rear->acceleration < 0 ? 1 : rear->speed + rear->acceleration;
+
+			}
+
+			// 3.接入下一秒的数据
+			// 3.1如果front是头车
+			if (front->key == 1 && front->next_time == NULL)
+			{
+				// 3.1.1赋予数据
+				front_nxtime = new Type_model_calculation_results;
+				front_nxtime->key = 1;                      // 车标
+				front_nxtime->distance = -1;                     // 前车距离
+				front_nxtime->change_distance = 0;                      // 变化的前车距离
+				front_nxtime->time = times;                  // 第几秒的数据
+				front_nxtime->change_speed = front_sp - front->speed;// 改变的速度
+				front_nxtime->speed = front_sp;               // 改变后的速度
+				front_nxtime->next_time = NULL;
+				front_nxtime->next_car = NULL;
+				// 变化的加速度
+				if (top->next_car->speed < The_head_car_changes_speed)
+					front_nxtime->acceleration = front_sp >= The_head_car_changes_speed ? 0 : acceleration;
+				else
+					front_nxtime->acceleration = front_sp <= The_head_car_changes_speed ? 0 : acceleration;
+				front_nxtime->change_acceleration = front_nxtime->acceleration - front->acceleration;
+				Vehicle_time.insert(map<int, Type_model_calculation_results*> ::value_type
+				(front_nxtime->time, front_nxtime));
+				// 3.1.2接入结点
+				front->next_time = front_nxtime;
+			}
+			// 3.2接入后车数据
+			// 3.2.1赋予数据
+			rear_nxtime = new Type_model_calculation_results;
+			rear_nxtime->key = rear->key;                    // 车标
+			rear_nxtime->time = times;                        // 第几秒的数据
+			rear_nxtime->speed = rear_sp;                      // 变化后的速度
+			rear_nxtime->change_speed = rear_sp - rear->speed;        // 变化的速度
+			rear_nxtime->acceleration = rear_acc;                     // 变化后的加速度
+			rear_nxtime->change_acceleration = rear_acc - rear->acceleration;// 变化的加速度
+			rear_nxtime->distance = rear_dis;                     // 变化后的车距
+			rear_nxtime->change_distance = rear_dis - rear->distance;    // 变化的车距
+			rear_nxtime->next_car = NULL;
+			rear_nxtime->next_time = NULL;
+			// 3.2.2接入结点
+			rear->next_time = rear_nxtime;
+			// 3.3前车的下一结点连接后车
+			front->next_time->next_car = rear_nxtime;
+
+			// 4.下两辆车的比较
+			front = rear; rear = rear->next_car;
+		}
+		// 如果撞车了，就停止运算
+		if (the_crash)
+		{
+			cout << "在第" << times << "秒";
+			cout << "第" << front->key << "辆车与第" << rear->key
+				<< "车相撞了！！！" << endl;
+			break;
+		}
+	}
+	return top;
 }
